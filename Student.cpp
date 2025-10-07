@@ -1,4 +1,3 @@
-```cpp
 // File: main.cpp
 #include <iostream>
 #include <string>
@@ -7,6 +6,7 @@
 #include <sstream>
 #include <iomanip>
 #include <limits>
+#include <algorithm>   // <--- added for sort
 using namespace std;
 
 // -------------------- Student --------------------
@@ -23,17 +23,13 @@ public:
         : name(n), roll(r), department(d), gpa(gp), contact(c) {}
 
     string serialize() const {
-        // TODO: implement CSV or other format for saving
-        // Example placeholder (not safe for commas): name,roll,department,gpa,contact
         ostringstream oss;
         oss << name << ',' << roll << ',' << department << ',' << gpa << ',' << contact;
         return oss.str();
     }
 
     static Student deserialize(const string &line) {
-        // TODO: implement robust parsing matching the chosen serialize format
         Student s;
-        // placeholder simple parse (expects no commas in fields)
         istringstream iss(line);
         string token;
         if (getline(iss, token, ',')) s.name = token;
@@ -52,7 +48,7 @@ public:
     string filename;
 
     Storage(const string &fname = "students.txt") : filename(fname) {
-        // Optional: loadFromFile();
+        loadFromFile();
     }
 
     void loadFromFile() {
@@ -80,7 +76,6 @@ public:
     }
 
     bool addStudent(const Student &s) {
-        // TODO: validate fields as needed
         if (rollExists(s.roll)) return false;
         students.push_back(s);
         saveToFile();
@@ -99,7 +94,6 @@ public:
     bool updateStudent(const string &roll, const Student &updated) {
         for (auto &s : students) {
             if (s.roll == roll) {
-                // TODO: update selected fields instead of full replace if desired
                 s = updated;
                 saveToFile();
                 return true;
@@ -132,7 +126,6 @@ public:
     }
 
     void sortByGPA(bool descending = false) {
-        // TODO: replace with std::sort for efficiency; using simple lambda here
         sort(students.begin(), students.end(), [descending](const Student &a, const Student &b) {
             return descending ? (a.gpa > b.gpa) : (a.gpa < b.gpa);
         });
@@ -173,7 +166,6 @@ void printStudentRow(const Student &s) {
 // -------------------- Main --------------------
 int main() {
     Storage store("students.txt");
-    store.loadFromFile();
 
     while (true) {
         cout << "\n===== Student Record Management =====\n";
@@ -200,40 +192,73 @@ int main() {
         if (choice == 0) break;
 
         if (choice == 1) {
-            // TODO: collect inputs, validate, call addStudent
-            cout << "[TODO] Add New Student - implement input collection and validation.\n";
+            Student s;
+            cout << "Name: "; getline(cin, s.name);
+            cout << "Roll: "; getline(cin, s.roll);
+            cout << "Department: "; getline(cin, s.department);
+            cout << "GPA: "; cin >> s.gpa; cin.ignore();
+            cout << "Contact: "; getline(cin, s.contact);
+            if (store.addStudent(s))
+                cout << "Student added successfully.\n";
+            else
+                cout << "Roll number already exists!\n";
         }
         else if (choice == 2) {
-            // TODO: display all in tabular form
-            cout << "[TODO] View All Students - implement display.\n";
+            auto all = store.viewAll();
+            printTableHeader();
+            for (const auto &s : all) printStudentRow(s);
         }
         else if (choice == 3) {
-            // TODO: ask roll, call viewByRoll, show details
-            cout << "[TODO] View Student by Roll - implement lookup and display.\n";
+            string roll;
+            cout << "Enter Roll: "; getline(cin, roll);
+            Student s;
+            if (store.viewByRoll(roll, s)) printStudentRow(s);
+            else cout << "Student not found!\n";
         }
         else if (choice == 4) {
-            // TODO: update student fields
-            cout << "[TODO] Update Student - implement editing flow.\n";
+            string roll;
+            cout << "Enter Roll to Update: "; getline(cin, roll);
+            Student s;
+            if (!store.viewByRoll(roll, s)) { cout << "Student not found!\n"; }
+            else {
+                cout << "New Name (" << s.name << "): "; string tmp; getline(cin, tmp); if (!tmp.empty()) s.name = tmp;
+                cout << "New Department (" << s.department << "): "; getline(cin, tmp); if (!tmp.empty()) s.department = tmp;
+                cout << "New GPA (" << s.gpa << "): "; getline(cin, tmp); if (!tmp.empty()) s.gpa = stod(tmp);
+                cout << "New Contact (" << s.contact << "): "; getline(cin, tmp); if (!tmp.empty()) s.contact = tmp;
+                if (store.updateStudent(roll, s)) cout << "Updated successfully.\n";
+            }
         }
         else if (choice == 5) {
-            // TODO: delete by roll
-            cout << "[TODO] Delete Student - implement deletion.\n";
+            string roll;
+            cout << "Enter Roll to Delete: "; getline(cin, roll);
+            if (store.deleteStudent(roll)) cout << "Deleted successfully.\n";
+            else cout << "Student not found!\n";
         }
         else if (choice == 6) {
-            // TODO: search by name and show results
-            cout << "[TODO] Search by Name - implement search and display.\n";
+            string namePart;
+            cout << "Enter Name (partial or full): "; getline(cin, namePart);
+            auto res = store.searchByName(namePart);
+            if (res.empty()) cout << "No students found.\n";
+            else { printTableHeader(); for (auto &s : res) printStudentRow(s); }
         }
         else if (choice == 7) {
-            // TODO: search by department and show results
-            cout << "[TODO] Search by Department - implement search and display.\n";
+            string deptPart;
+            cout << "Enter Department (partial or full): "; getline(cin, deptPart);
+            auto res = store.searchByDepartment(deptPart);
+            if (res.empty()) cout << "No students found.\n";
+            else { printTableHeader(); for (auto &s : res) printStudentRow(s); }
         }
         else if (choice == 8) {
-            // TODO: sort by GPA (ask asc/desc)
-            cout << "[TODO] Sort by GPA - implement choice and sorting.\n";
+            int opt;
+            cout << "1. Ascending  2. Descending: "; cin >> opt; cin.ignore();
+            store.sortByGPA(opt != 1);
+            cout << "Sorted by GPA.\n";
         }
         else if (choice == 9) {
-            // TODO: sort by Roll (ask asc/desc)
-            cout << "[TODO] Sort by Roll - implement choice and sorting.\n";
+            int opt;
+            cout << "1. Ascending  2. Descending: "; cin >> opt; cin.ignore();
+            store.sortByRoll(opt == 1);
+            cout << "Sorted by Roll.\n";
         }
         else {
             cout << "Invalid option.\n";
@@ -245,4 +270,3 @@ int main() {
     cout << "Goodbye!\n";
     return 0;
 }
-```
