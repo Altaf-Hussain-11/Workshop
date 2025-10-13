@@ -267,6 +267,6 @@ int main() {
         pauseScreen();
     }
 
-    cout << "Goodbye!\n";
+    cout << "Goodbye...G!\n";
     return 0;
 }
